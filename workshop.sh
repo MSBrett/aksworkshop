@@ -1,6 +1,6 @@
 #!/bin/bash
 environment="sandbox"
-costCenter="genesys"
+costCenter="pec"
 projectID="pec2"
 location="westus2"
 subscription="Aquarium"
@@ -15,7 +15,7 @@ aksVMSize="Standard_B2s"
 aksNodeCount=3
 kubeVersion="1.17.3"
 adminUserName="localadmin"
-mongodbPassword="&@B(OWslk2187(*&ab"
+mongodbPassword="p&e@cB(OWslk2187(*&ab"
 workspaceName="${projectID}${location}logs"
 
 ##############################
