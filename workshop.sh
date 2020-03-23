@@ -1,7 +1,7 @@
 #!/bin/bash
 environment="sandbox"
-costCenter="pec"
-projectID="pec2"
+costCenter="genesys"
+projectID="pec1"
 location="westus2"
 subscription="Aquarium"
 resourceGroupName1="${projectID}_${location}"
@@ -15,7 +15,6 @@ aksVMSize="Standard_B2s"
 aksNodeCount=3
 kubeVersion="1.17.3"
 adminUserName="localadmin"
-mongodbPassword="p&e@cB(OWslk2187(*&ab"
 workspaceName="${projectID}${location}logs"
 
 ##############################
@@ -32,18 +31,18 @@ az group create --name $resourceGroupName1 --location $location
 ##############################
 #  Service Principal
 ##############################
-if test -f "aksserviceprincipal.json"; then
+if test -f "serviceprincipal.json"; then
     echo "Service Principal details found"
 else
     echo "Create a service principal for AKS"
-    az ad sp create-for-rbac --skip-assignment --name "${aksname}sp" -o json >> aksserviceprincipal.json
+    az ad sp create-for-rbac --skip-assignment --name "${aksname}sp" -o json >> serviceprincipal.json
 fi
 
-spAppId=$(jq -r .appId aksserviceprincipal.json)
-spPassword=$(jq -r '.password' aksserviceprincipal.json)
+spAppId=$(jq -r .appId serviceprincipal.json)
+spPassword=$(jq -r '.password' serviceprincipal.json)
 subscriptionId=$(az account show --subscription $subscription --query 'id' -o tsv)
 tenantId=$(az account show --query 'tenantId' --output tsv)
-
+mongodbPassword=$(jq -r '.password' serviceprincipal.json | cut -c1-8)
 
 scope="/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName1}"
 az role assignment create --assignee $spAppId --scope $scope --role Contributor
