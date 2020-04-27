@@ -4,6 +4,7 @@
 *.exe~
 *.dll
 serviceprincipal.json
+helm-v3.1.2-linux-amd64.tar.gz
 captureorder-ingress-tls.yaml
 captureorder-ingress.yaml
 captureorder-deployment-flexvol.yaml
@@ -14,4 +15,4 @@ letsencrypt-clusterissuer.yaml
 azch-loadtest/
 azch-frontend/
 azch-captureorder/
-
+linux-amd64/
