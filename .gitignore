@@ -4,3 +4,11 @@
 *.exe~
 *.dll
 serviceprincipal.json
+captureorder-ingress-tls.yaml
+captureorder-ingress.yaml
+captureorder-deployment-flexvol.yaml
+frontend-deployment.yaml
+frontend-ingress-tls.yaml
+frontend-ingress.yaml
+letsencrypt-clusterissuer.yaml
+

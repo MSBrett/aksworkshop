@@ -1,9 +1,10 @@
 #!/bin/bash
-environment="sandbox"
-costCenter="genesys"
-projectID="pec1"
-location="westus2"
-subscription="Aquarium"
+subscription="Azure_EU_Class"
+projectID="eu1"
+emailAddress="brettwil@microsoft.com"
+environment="training"
+costCenter="training"
+location="westus"
 resourceGroupName1="${projectID}_${location}"
 resourceGroupName2="${projectID}_${location}_AKS"
 VNetName1="${resourceGroupName1}_VNet"
@@ -31,12 +32,12 @@ az group create --name $resourceGroupName1 --location $location
 ##############################
 #  Service Principal
 ##############################
-if test -f "serviceprincipal.json"; then
-    echo "Service Principal details found"
-else
-    echo "Create a service principal for AKS"
-    az ad sp create-for-rbac --skip-assignment --name "${aksname}sp" -o json >> serviceprincipal.json
-fi
+#if test -f "serviceprincipal.json"; then
+#    echo "Service Principal details found"
+#else
+#    echo "Create a service principal for AKS"
+#    az ad sp create-for-rbac --skip-assignment --name "${aksname}sp" -o json >> serviceprincipal.json
+#fi
 
 spAppId=$(jq -r .appId serviceprincipal.json)
 spPassword=$(jq -r '.password' serviceprincipal.json)
@@ -44,10 +45,9 @@ subscriptionId=$(az account show --subscription $subscription --query 'id' -o ts
 tenantId=$(az account show --query 'tenantId' --output tsv)
 mongodbPassword=$(jq -r '.password' serviceprincipal.json | cut -c1-8)
 
-scope="/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName1}"
-az role assignment create --assignee $spAppId --scope $scope --role Contributor
+#scope="/subscriptions/${subscriptionId}/resourceGroups/${resourceGroupName1}"
+#az role assignment create --assignee $spAppId --scope $scope --role Contributor
 
-exit
 ##############################
 #  AKS
 ##############################
@@ -76,6 +76,7 @@ workspace=$(az resource show --resource-type Microsoft.OperationalInsights/works
 az aks enable-addons --resource-group $resourceGroupName1 --name $aksname \
 --addons monitoring --workspace-resource-id $workspace
 
+# az aks disable-addons --resource-group $resourceGroupName1 --name $aksname --addons monitoring
 
 ##############################
 #  Helm 3
@@ -90,15 +91,24 @@ helm repo update
 #  Mongo
 ##############################
 helm install orders-mongo stable/mongodb --set mongodbUsername=orders-user,mongodbPassword=${mongodbPassword},mongodbDatabase=akschallenge
-helm uninstall orders-mongo
+# helm uninstall orders-mongo
 ##############################
 #  Ingress
 ##############################
 kubectl create namespace ingress
 helm install ingress stable/nginx-ingress --namespace ingress
 pubip=$(kubectl get svc -n ingress ingress-nginx-ingress-controller -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
-echo "captureorder.${pubip}.nip.io"
-echo "frontend.${pubip}.nip.io"
+
+sed "s/<PUBLICIP>/${pubip}/g" eg-captureorder-ingress-tls.yaml > captureorder-ingress-tls.yaml
+sed "s/<PUBLICIP>/${pubip}/g" eg-captureorder-ingress.yaml > captureorder-ingress.yaml
+
+sed "s/<PUBLICIP>/${pubip}/g" eg-frontend-deployment.yaml > frontend-deployment.yaml
+sed "s/<PUBLICIP>/${pubip}/g" eg-frontend-ingress-tls.yaml > frontend-ingress-tls.yaml
+sed "s/<PUBLICIP>/${pubip}/g" eg-frontend-ingress.yaml > frontend-ingress.yaml
+
+sed "s/<EMAILADDRESS>/${emailAddress}/g" eg-letsencrypt-clusterissuer.yaml > letsencrypt-clusterissuer.yaml
+sed "s/<RESOURCEGROUPNAME>/${resourceGroupName1}/g" eg-captureorder-deployment-flexvol.yaml > captureorder-deployment-flexvol.yaml
+sed -i "s/<KEYVAULTNAME>/${kvname}/g" captureorder-deployment-flexvol.yaml
 
 ##############################
 #  Certificates
@@ -148,9 +158,11 @@ git clone https://github.com/Azure/azch-loadtest.git
 git clone https://github.com/Azure/azch-frontend.git
 git clone https://github.com/Azure/azch-captureorder.git
 
+pushd
 cd azch-captureorder
 az acr build -t "captureorder:{{.Run.ID}}" -r $acrname .
 az aks update -n $aksname -g $resourceGroupName1 --attach-acr $acrname
+popd
 
 ##############################
 #  MongoDB replication using a StatefulSet
