@@ -92,6 +92,11 @@ helm repo update
 ##############################
 helm install orders-mongo stable/mongodb --set mongodbUsername=orders-user,mongodbPassword=${mongodbPassword},mongodbDatabase=akschallenge
 # helm uninstall orders-mongo
+
+echo "Wait for MongoDB to deploy and then press [Enter] to continue."
+echo "You can follow progress in VSCode."
+read -p "Press [Enter] to continue."
+
 ##############################
 #  Ingress
 ##############################
@@ -101,11 +106,9 @@ pubip=$(kubectl get svc -n ingress ingress-nginx-ingress-controller -o jsonpath=
 
 sed "s/<PUBLICIP>/${pubip}/g" eg-captureorder-ingress-tls.yaml > captureorder-ingress-tls.yaml
 sed "s/<PUBLICIP>/${pubip}/g" eg-captureorder-ingress.yaml > captureorder-ingress.yaml
-
 sed "s/<PUBLICIP>/${pubip}/g" eg-frontend-deployment.yaml > frontend-deployment.yaml
 sed "s/<PUBLICIP>/${pubip}/g" eg-frontend-ingress-tls.yaml > frontend-ingress-tls.yaml
 sed "s/<PUBLICIP>/${pubip}/g" eg-frontend-ingress.yaml > frontend-ingress.yaml
-
 sed "s/<EMAILADDRESS>/${emailAddress}/g" eg-letsencrypt-clusterissuer.yaml > letsencrypt-clusterissuer.yaml
 sed "s/<RESOURCEGROUPNAME>/${resourceGroupName1}/g" eg-captureorder-deployment-flexvol.yaml > captureorder-deployment-flexvol.yaml
 sed -i "s/<KEYVAULTNAME>/${kvname}/g" captureorder-deployment-flexvol.yaml
@@ -141,6 +144,12 @@ kubectl apply -f frontend-service.yaml
 kubectl apply -f frontend-ingress-tls.yaml
 
 ##############################
+#  Test the endpoints
+##############################
+echo "https://captureorder.${pubip}.nip.io/swagger"
+echo "https://frontend.${pubip}.nip.io/"
+
+##############################
 #  Load Test
 ##############################
 az container create -g $resourceGroupName1 -n loadtest --image azch/loadtest --restart-policy Never -e SERVICE_ENDPOINT=https://captureorder.${pubip}.nip.io
@@ -158,7 +167,7 @@ git clone https://github.com/Azure/azch-loadtest.git
 git clone https://github.com/Azure/azch-frontend.git
 git clone https://github.com/Azure/azch-captureorder.git
 
-pushd
+pushd .
 cd azch-captureorder
 az acr build -t "captureorder:{{.Run.ID}}" -r $acrname .
 az aks update -n $aksname -g $resourceGroupName1 --attach-acr $acrname

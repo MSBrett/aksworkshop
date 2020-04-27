@@ -11,4 +11,7 @@ frontend-deployment.yaml
 frontend-ingress-tls.yaml
 frontend-ingress.yaml
 letsencrypt-clusterissuer.yaml
+azch-loadtest/
+azch-frontend/
+azch-captureorder/
 
